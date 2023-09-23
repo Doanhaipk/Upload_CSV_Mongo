@@ -1,6 +1,4 @@
-﻿using MongoDB.Bson.IO;
-using MongoDB.Driver.Core.Events;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -18,7 +16,7 @@ namespace Upload_CSV_Mongo
     {
         public static Config currentConfig;
         public static string pathTo_MAOCSV = @"\\vnatshfs.intel.com\VNATAnalysis$\MAOATM\Config\VN\VNAT_AE\Direct Material\material_consumption.csv";
-
+       
         public static void WriteLog(string log)
         {
             string logPath = Path.Combine(Environment.CurrentDirectory, "UploadCSV_Mongo.log");
@@ -32,61 +30,11 @@ namespace Upload_CSV_Mongo
             }
             catch { }
         }
-        private static List<PasteData> ReturnListData()
-        {
-            if (currentConfig.path_CSV != null)
-            {
-                pathTo_MAOCSV = currentConfig.path_CSV;
-            }
-            List<PasteData> listPasteData = new List<PasteData>();
-            try
-            {
-                using (FileStream fs = new FileStream(pathTo_MAOCSV, FileMode.Open, FileAccess.Read, FileShare.ReadWrite))
-                {
-                    using (StreamReader sr = new StreamReader(fs))
-                    {
-                        string line;
-                        while ((line = sr.ReadLine()) != null)
-                        {
-                            if (line.Contains("facility"))
-                            {
-                                continue;
-                            }
-
-                            line = Regex.Replace(line, @"\""", string.Empty);
-                            string[] splLine = line.Split(',');
-                            PasteData currentData = new PasteData
-                            {
-                                facility = splLine[0],
-                                module = splLine[1],
-                                commodity_class = splLine[2],
-                                month = splLine[3],
-                                ipn = splLine[4],
-                                consume = double.Parse(splLine[5].Trim()),
-                                order = int.Parse(splLine[6].Trim()),
-                                loss = double.Parse(splLine[7].Trim()),
-                                process_waste = double.Parse(splLine[8].Trim()),
-                                wip_inventory = double.Parse(splLine[9].Trim()),
-                                other = double.Parse(splLine[10].Trim())
-                                //action = splLine[11].Trim()
-                            };
-                            listPasteData.Add(currentData);
-                        }
-                    }
-                }
-            }
-            catch (Exception ex)
-            {
-                WriteLog("Parse csv err: " + ex.Message);
-            }
-            return listPasteData;
-        }
-
         private static List<PasteData> _ReturnListData()
         {
             if (currentConfig.path_CSV != null)
             {
-                pathTo_MAOCSV = currentConfig.path_CSV;                
+                pathTo_MAOCSV = currentConfig.path_CSV;
             }
             Console.WriteLine("Path to CSV: " + pathTo_MAOCSV);
             List<PasteData> listPasteData = new List<PasteData>();
@@ -136,7 +84,7 @@ namespace Upload_CSV_Mongo
                                 facility = splLine[facility_idx],
                                 module = splLine[module_idx],
                                 commodity_class = splLine[commodity_class_idx],
-                                month = splLine[month_idx],
+                                month = splLine[month_idx].Split('.')[0],
                                 ipn = splLine[ipn_idx],
                                 consume = double.Parse(splLine[consume_idx].Trim()),
                                 order = double.Parse(splLine[order_idx].Trim()),
@@ -166,11 +114,6 @@ namespace Upload_CSV_Mongo
                 var listData = _ReturnListData();
 
                 MongoAPI.InsertData(listData);
-
-                //foreach (var data in listData)
-                //{
-                //    MongoAPI.InsertData(data);
-                //}
             }
             catch (Exception ex)
             {
